@@ -18,5 +18,8 @@
   "homepage": "https://github.com/GrowTopics/website-api#readme",
   "devDependencies": {
     "eslint": "^7.30.0"
+  },
+  "dependencies": {
+    "cookie": "^0.4.1"
   }
 }

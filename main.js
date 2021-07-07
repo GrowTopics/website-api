@@ -11,8 +11,11 @@ const db = mongoose.connection;
 const testSchema = require('./testschema');
 
 // Express and everything related to express
+const cookieparser = require('cookie-parser');
 const express = require("express");
 const app = express();
+
+app.use(cookieparser());
 
 // Adds stuff to the db
 app.get('/add', (req, res) => {
@@ -41,12 +44,14 @@ app.get('/close', (req, res) => {
 
 let tokenforparsing;
 app.get('/jwtsign', (req, res) => {
-    const RS256key = fs.readFileSync('jwtRS256.key');
-    const a = jwt.sign({ name: "chicc" }, RS256key, { algorithm: 'RS256' }, (err, token) => {
-        console.log(token);
-        tokenforparsing = token;
-        res.send(token);
-    });
+    // const RS256key = fs.readFileSync('jwtRS256.key');
+    // const a = jwt.sign({ name: "chicc" }, RS256key, { algorithm: 'RS256' }, (err, token) => {
+        // console.log(token);
+        // tokenforparsing = token;
+        // res.send(token);
+    // });
+    var a = jwt.sign({ name: "chicc" }, 'shhhhh');
+    res.send(a);
 });
 
 // Verifys it make sure to visit /jwtsign to generate the token otherwise it will return an error
@@ -69,6 +74,23 @@ app.get('/jwtdecode', (req, res) => {
     const decodedToken = jwt.decode(tokenforparsing, { complete: true });
     console.log(decodedToken);
     res.send(decodedToken);
+});
+
+// Makes a cookie with name: name, value: chicc
+// Set to secure and httpOnly
+
+app.get('/gencookie', (req, res) => {
+    res.cookie('name', 'chicc', {
+        secure: true,
+        httpOnly: true
+    });
+    res.send("hello");
+});
+
+// Gets all cookies 
+
+app.get('/getcookie', (req, res) => {
+    res.send(req.cookies);
 });
 
 // Make sure we are connected to the db if so then run the api
