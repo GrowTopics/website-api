@@ -2,6 +2,7 @@
 const jwt = require("jsonwebtoken");
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
+const request = require('request');
 
 // MongoDB stuff
 const mongoose = require("mongoose");
@@ -9,7 +10,7 @@ mongoose.connect('mongodb://dbgt:CSZtni4ESQkVkI9hlSow0TQgQ7HoEJyNnV3Pn6Er2HXEnCu
 const db = mongoose.connection;
 
 // MongoDB schemas
-const testSchema = require('./testschema');
+const userSchema = require('./userSchema');
 
 // Express and everything related to express
 const cookieparser = require('cookie-parser');
@@ -21,7 +22,7 @@ app.use(cookieparser());
 // Adds stuff to the db
 app.get('/add', (req, res) => {
     const query = req.query;
-    const silence = new testSchema({ name: query.name, password: query.password, email: query.email });
+    const silence = new userSchema({ name: query.name, password: query.password, email: query.email });
     silence.save();
     res.send(silence.name);
 });
@@ -29,7 +30,7 @@ app.get('/add', (req, res) => {
 // Gets stuff from the db
 app.get('/get', async(req, res) => {
     const query = req.query;
-    const find = await testSchema.findOne({ name: "chicc" });
+    const find = await userSchema.findOne({ name: "chicc" });
     res.send(find);
 });
 
@@ -118,6 +119,33 @@ app.get('/checkhash', (req, res) => {
         }
     });
 });
+
+// Stores username password email in database from a post request
+app.post('/adduser', (req, res) => {
+    const body = req.body;
+    const user = new userSchema({ name: body.name, password: body.password, email: body.email });
+    user.save();
+    res.send(user);
+});
+
+// Gets data from the database based on the password from a post request
+app.post('/getuser', async(req, res) => {
+    const body = req.body;
+    const find = await userSchema.findOne({ password: body.password });
+    res.send(find);
+});
+
+// send a post request to the specfied url and data
+app.get('/sendpost', (req, res) => {
+    const query = req.query;
+    request.post({
+        url: query.uri,
+        json: { username: query.username, password: query.password, email: query.email }
+    }, (error, response, body) => {
+        res.send(body);
+    });
+});
+
 
 // Make sure we are connected to the db if so then run the api
 db.on('error', console.error.bind(console, 'connection error:'));
