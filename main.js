@@ -1,6 +1,7 @@
 // Other packages
 const jwt = require("jsonwebtoken");
 const fs = require('fs');
+const bcrypt = require('bcryptjs');
 
 // MongoDB stuff
 const mongoose = require("mongoose");
@@ -44,14 +45,14 @@ app.get('/close', (req, res) => {
 
 let tokenforparsing;
 app.get('/jwtsign', (req, res) => {
-    // const RS256key = fs.readFileSync('jwtRS256.key');
-    // const a = jwt.sign({ name: "chicc" }, RS256key, { algorithm: 'RS256' }, (err, token) => {
-        // console.log(token);
-        // tokenforparsing = token;
-        // res.send(token);
-    // });
-    var a = jwt.sign({ name: "chicc" }, 'shhhhh');
-    res.send(a);
+    const RS256key = fs.readFileSync('jwtRS256.key');
+    const a = jwt.sign({ name: "chicc", email: "chicc@chicc.chicc", password: "chicc123" }, RS256key, { algorithm: 'RS256' }, (err, token) => {
+        console.log(token);
+        tokenforparsing = token;
+        res.send(token);
+    });
+    // var a = jwt.sign({ name: "chicc" }, 'shhhhh');
+    // res.send(a);
 });
 
 // Verifys it make sure to visit /jwtsign to generate the token otherwise it will return an error
@@ -91,6 +92,31 @@ app.get('/gencookie', (req, res) => {
 
 app.get('/getcookie', (req, res) => {
     res.send(req.cookies);
+});
+
+// receive a password and hash and salt it using bcrypt
+let passwordHash;
+app.get('/genhash', (req, res) => {
+    const query = req.query;
+    const saltRounds = 10;
+    bcrypt.genSalt(saltRounds, (err, salt) => {
+        bcrypt.hash(query.password, salt, (err, hash) => {
+            passwordHash = hash;
+            res.send(hash);
+        });
+    });
+});
+
+// verifies the password
+app.get('/checkhash', (req, res) => {
+    const query = req.query;
+    bcrypt.compare(query.password, passwordHash, (err, result) => {
+        if (result) {
+            res.send("true");
+        } else {
+            res.send("false");
+        }
+    });
 });
 
 // Make sure we are connected to the db if so then run the api
