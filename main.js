@@ -18,17 +18,29 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // Test app.post with - curl -d "example=example" -X POST url
 
-// Order endpoint
+// Order to store in db
 app.post('/api/order', (req, res) => {
     try {
         const body = req.body;
         console.log(body);
         const order = new orderSchema({ shopper: body.shopper, worker: body.worker, orderType: body.orderType, orderId: body.orderId, world: body.world, password: body.password, notes: body.notes });
         order.save();
-        res.status(200);
+        res.status(200).send('200');
     } catch (e) {
         console.log(e);
-        res.status(500);
+        res.status(500).send('500 Internal Server Error');
+    }
+});
+
+// Get Order from db
+app.post('/api/allorder', async(req, res) => {
+    try {
+        const body = req.body;
+        const find = await orderSchema.find({});
+        res.send(find);
+    } catch (e) {
+        console.log(e);
+        res.status(500).send('500 Internal Server Error');
     }
 });
 
