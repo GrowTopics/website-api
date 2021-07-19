@@ -1,155 +1,42 @@
-// Other packages
-const jwt = require("jsonwebtoken");
-const fs = require('fs');
-const bcrypt = require('bcryptjs');
-const request = require('request');
-
 // MongoDB stuff
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 mongoose.connect('mongodb://dbgt:CSZtni4ESQkVkI9hlSow0TQgQ7HoEJyNnV3Pn6Er2HXEnCuZsdzAoDKrsiyC9Pndy3C328looSstaVWkDpfpgQ==@dbgt.mongo.cosmos.azure.com:10255/?ssl=true&replicaSet=globaldb&retrywrites=false&maxIdleTimeMS=120000&appName=@dbgt@', {useNewUrlParser: true, useUnifiedTopology: true});
 const db = mongoose.connection;
 
-// MongoDB schemas
+// MongoDB Schemas
 const userSchema = require('./userSchema');
+const orderSchema = require('./orderSchema');
 
 // Express and everything related to express
 const cookieparser = require('cookie-parser');
-const express = require("express");
+const bodyParser = require('body-parser');
+const express = require('express');
 const app = express();
 
 app.use(cookieparser());
+app.use(bodyParser.urlencoded({ extended: true }));
 
-// Adds stuff to the db
-app.get('/add', (req, res) => {
-    const query = req.query;
-    const silence = new userSchema({ name: query.name, password: query.password, email: query.email });
-    silence.save();
-    res.send(silence.name);
-});
+// Test app.post with - curl -d "example=example" -X POST url
 
-// Gets stuff from the db
-app.get('/get', async(req, res) => {
-    const query = req.query;
-    const find = await userSchema.findOne({ name: "chicc" });
-    res.send(find);
-});
-
-// Closes the db
-app.get('/close', (req, res) => {
-    db.close();
-});
-
-// Generate RS256 private keys with this commmand:
-// ssh-keygen -t rsa -b 4096 -m PEM -f jwtRS256.key
-// Dont add passphrase 
-// Wont work unless you installed jwt correctly
-
-let tokenforparsing;
-app.get('/jwtsign', (req, res) => {
-    const RS256key = fs.readFileSync('jwtRS256.key');
-    const a = jwt.sign({ name: "chicc", email: "chicc@chicc.chicc", password: "chicc123" }, RS256key, { algorithm: 'RS256' }, (err, token) => {
-        console.log(token);
-        tokenforparsing = token;
-        res.send(token);
-    });
-    // var a = jwt.sign({ name: "chicc" }, 'shhhhh');
-    // res.send(a);
-});
-
-// Verifys it make sure to visit /jwtsign to generate the token otherwise it will return an error
-
-app.get('/jwtverify', (req, res) => {
-    jwt.verify(tokenforparsing, fs.readFileSync('jwtRS256.key'), { algorithms: ['RS256'] },(err, decoded) => {
-        if (err) {
-            console.log(err);
-            res.send(err);
-        } else {
-            console.log(decoded.name);
-            console.log(decoded);
-            res.send(decoded.name);
-        }
-    });
-});
-
-// Decodes the token, make sure to visit /jwtsign to generate the token otherwise an error will happen
-app.get('/jwtdecode', (req, res) => {
-    const decodedToken = jwt.decode(tokenforparsing, { complete: true });
-    console.log(decodedToken);
-    res.send(decodedToken);
-});
-
-// Makes a cookie with name: name, value: chicc
-// Set to secure and httpOnly
-
-app.get('/gencookie', (req, res) => {
-    res.cookie('name', 'chicc', {
-        secure: true,
-        httpOnly: true
-    });
-    res.send("hello");
-});
-
-// Gets all cookies 
-
-app.get('/getcookie', (req, res) => {
-    res.send(req.cookies);
-});
-
-// receive a password and hash and salt it using bcrypt
-let passwordHash;
-app.get('/genhash', (req, res) => {
-    const query = req.query;
-    const saltRounds = 10;
-    bcrypt.genSalt(saltRounds, (err, salt) => {
-        bcrypt.hash(query.password, salt, (err, hash) => {
-            passwordHash = hash;
-            res.send(hash);
-        });
-    });
-});
-
-// verifies the password
-app.get('/checkhash', (req, res) => {
-    const query = req.query;
-    bcrypt.compare(query.password, passwordHash, (err, result) => {
-        if (result) {
-            res.send("true");
-        } else {
-            res.send("false");
-        }
-    });
-});
-
-// Stores username password email in database from a post request
-app.post('/adduser', (req, res) => {
-    const body = req.body;
-    const user = new userSchema({ name: body.name, password: body.password, email: body.email });
-    user.save();
-    res.send(user);
-});
-
-// Gets data from the database based on the password from a post request
-app.post('/getuser', async(req, res) => {
-    const body = req.body;
-    const find = await userSchema.findOne({ password: body.password });
-    res.send(find);
-});
-
-// send a post request to the specfied url and data
-app.get('/sendpost', (req, res) => {
-    const query = req.query;
-    request.post({
-        url: query.uri,
-        json: { username: query.username, password: query.password, email: query.email }
-    }, (error, response, body) => {
-        res.send(body);
-    });
+// Order endpoint
+app.post('/api/order', (req, res) => {
+    try {
+        const body = req.body;
+        console.log(body);
+        const order = new orderSchema({ shopper: body.shopper, worker: body.worker, orderType: body.orderType, orderId: body.orderId, world: body.world, password: body.password, notes: body.notes });
+        order.save();
+        res.status(200);
+    } catch (e) {
+        console.log(e);
+        res.status(500);
+    }
 });
 
 
-// Make sure we are connected to the db if so then run the api
+// Make sure we are connected to the db and if so run the API
+var port = 5000;
 db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open', () => {
     console.log('Connection has been acheived, Running API');
-    app.listen(5000);
+    app.listen(port);
 });
