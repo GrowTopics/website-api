@@ -48,11 +48,23 @@ app.post('/api/allorder', async(req, res) => {
 app.post('/api/findorder', async(req, res) => {
     try {
         const body = req.body;
-        const find = await orderSchema.find(body.query);
+        const find = await orderSchema.find(body.find);
         res.send(find);
     } catch (e) {
         console.log(e);
         res.status(500).send('500 Internal Server Error');
+    }
+});
+
+// find and update an order in the db
+app.post('/api/updateorder', (req, res) => {
+    try {
+        const body = req.body;
+        orderSchema.findOneAndUpdate(body.find, body.replace);
+        res.send('200');
+    } catch (e) {
+        console.log(e);
+        res.error(500).send('500 Internal Server Error');
     }
 });
 
