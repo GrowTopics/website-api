@@ -44,6 +44,17 @@ app.post('/api/allorder', async(req, res) => {
     }
 });
 
+// Search the db for order info
+app.post('/api/findorder', async(req, res) => {
+    try {
+        const body = req.body;
+        const find = await orderSchema.find(body.query);
+        res.send(find);
+    } catch (e) {
+        console.log(e);
+        res.status(500).send('500 Internal Server Error');
+    }
+});
 
 // Make sure we are connected to the db and if so run the API
 var port = 5000;
