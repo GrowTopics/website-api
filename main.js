@@ -1,11 +1,14 @@
 // MongoDB stuff
 const mongoose = require('mongoose');
+const autoIncrement = require('mongoose-auto-increment');
 mongoose.connect('mongodb://dbgt:CSZtni4ESQkVkI9hlSow0TQgQ7HoEJyNnV3Pn6Er2HXEnCuZsdzAoDKrsiyC9Pndy3C328looSstaVWkDpfpgQ==@dbgt.mongo.cosmos.azure.com:10255/?ssl=true&replicaSet=globaldb&retrywrites=false&maxIdleTimeMS=120000&appName=@dbgt@', {useNewUrlParser: true, useUnifiedTopology: true});
 const db = mongoose.connection;
+autoIncrement.initialize(db);
 
-// MongoDB Schemas
-const userSchema = require('./userSchema');
-const orderSchema = require('./orderSchema');
+// MongoDB schemas
+const userSchema = require('./schemas/userSchema');
+const orderSchema = require('./schemas/orderSchema');
+const blogSchema = require('./schemas/blogSchema');
 
 // Express and everything related to express
 const cookieparser = require('cookie-parser');
@@ -16,62 +19,64 @@ const app = express();
 app.use(cookieparser());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Test app.post with - curl -d "example=example" -X POST url
+// Test app.post with - curl -d "example=example" -X url
 
-// Order to store in db
-app.post('/api/order', (req, res) => {
+// Get a list of all topics
+app.get('/api/blog/topics', async(req, res) => {
     try {
-        const body = req.body;
-        console.log(body);
-        const order = new orderSchema({ shopper: body.shopper, worker: body.worker, orderType: body.orderType, orderId: body.orderId, world: body.world, password: body.password, notes: body.notes });
-        order.save();
-        res.status(200).send('200');
-    } catch (e) {
-        console.log(e);
-        res.status(500).send('500 Internal Server Error');
-    }
+        const topics = await blogSchema.find({});
+        res.send(topics);
+    } catch (e) { console.log(e); return res.status(500).send("500 Internal Server Error"); }
 });
 
-// Get Order from db
-app.post('/api/allorder', async(req, res) => {
+// Add a new topic for blog writers
+app.post('/api/blog/topic', async(req, res) => {
     try {
-        const body = req.body;
-        const find = await orderSchema.find({});
-        res.send(find);
-    } catch (e) {
-        console.log(e);
-        res.status(500).send('500 Internal Server Error');
-    }
+        const data = new blogSchema({ status: 0, topic: req.body.topic});
+        data.save();
+        res.send("200 OK");
+    } catch (e) { console.log(e); return res.status(500).send("500 Interal Server Error"); }
 });
 
-// Search the db for order info
-app.post('/api/findorder', async(req, res) => {
+// Deletes a topic
+app.delete('/api/blog/topic', async(req, res) => {
     try {
-        const body = req.body;
-        const find = await orderSchema.find(body.find);
-        res.send(find);
-    } catch (e) {
-        console.log(e);
-        res.status(500).send('500 Internal Server Error');
-    }
+        await blogSchema.deleteOne({id: req.query.id});
+        res.send("200 OK")
+    } catch (e) { console.log(e); res.status(500).send("500 Internal Server Error"); }
 });
 
-// find and update an order in the db
-app.post('/api/updateorder', (req, res) => {
+// Updates a blog with text
+app.post('/api/blog/save', async(req, res) => {
+    try {
+        body = req.body
+        await blogSchema.updateOne({ id: body.id }, { text: body.text });
+        res.send("200 OK");
+    } catch (e) { console.log(e); res.status(500).send("500 Internal Server Error"); }
+});
+
+// Gets a users rank
+app.get('/api/admin/rank', async(req, res) => {
+   try {
+       const query = req.query;
+       const data = await userSchema.findOne({ username: query.username });
+       res.send(data);
+   } catch (e) { console.log(e); res.status(500).send("500 Internal Server Error"); }
+});
+
+// Updates a users rank
+app.post('/api/admin/rank', async(req, res) => {
     try {
         const body = req.body;
-        orderSchema.findOneAndUpdate(body.find, body.replace);
-        res.send('200');
-    } catch (e) {
-        console.log(e);
-        res.error(500).send('500 Internal Server Error');
-    }
+        await userSchema.updateOne({ username: body.username }, { rank: body.rank });
+        res.send("200 OK");
+    } catch (e) { console.log(e); res.status(500).send("500 Internal Server Error"); }
 });
 
 // Make sure we are connected to the db and if so run the API
 var port = 5000;
 db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open', () => {
-    console.log('Connection has been acheived, Running API');
+    console.log('Connection has been achieved, Running API');
     app.listen(port);
 });
