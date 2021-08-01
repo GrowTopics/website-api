@@ -73,6 +73,7 @@ app.post('/api/admin/rank', async(req, res) => {
     } catch (e) { console.log(e); res.status(500).send("500 Internal Server Error"); }
 });
 
+// Gets a users prefix
 app.get('/api/user/prefix', async(req, res) => {
     try {
         const query = req.query;
@@ -81,12 +82,22 @@ app.get('/api/user/prefix', async(req, res) => {
     } catch (e) { console.log(e); res.status(500).send("500 Internal Server Error"); }
 });
 
+// Updates a users prefix
 app.post('/api/user/prefix', async(req, res) => {
     try {
         const body = req.body;
         await userSchema.updateOne({ username: body.username }, { prefix: body.prefix });
         res.send("200 OK");
     } catch (e) { console.log(e); res.status(500).send("500 Internal Server Error"); }
+});
+
+// Submits a blog with text
+app.post('/api/blog/submit', async(req, res) => {
+   try {
+       const body = req.body;
+       await blogSchema.updateOne({ id: body.id }, { text: body.text, status: 3 });
+       res.send("200 OK");
+   } catch (e) { console.log(e); res.status(500).send("500 Internal Server Error"); }
 });
 
 // Make sure we are connected to the db and if so run the API
