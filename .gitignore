@@ -12,3 +12,4 @@ jwtRS256.key.pub
 /node_modules/
 /.vscode/
 package-lock.json
+/.idea/
