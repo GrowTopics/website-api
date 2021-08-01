@@ -73,6 +73,22 @@ app.post('/api/admin/rank', async(req, res) => {
     } catch (e) { console.log(e); res.status(500).send("500 Internal Server Error"); }
 });
 
+app.get('/api/user/prefix', async(req, res) => {
+    try {
+        const query = req.query;
+        const data = await userSchema.findOne({ username: query.username });
+        res.send(data);
+    } catch (e) { console.log(e); res.status(500).send("500 Internal Server Error"); }
+});
+
+app.post('/api/user/prefix', async(req, res) => {
+    try {
+        const body = req.body;
+        await userSchema.updateOne({ username: body.username }, { prefix: body.prefix });
+        res.send("200 OK");
+    } catch (e) { console.log(e); res.status(500).send("500 Internal Server Error"); }
+});
+
 // Make sure we are connected to the db and if so run the API
 var port = 5000;
 db.on('error', console.error.bind(console, 'connection error:'));

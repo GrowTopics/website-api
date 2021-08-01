@@ -5,7 +5,8 @@ const schema = new mongoose.Schema({
     password: String,
     username: String,
     rank: String,
-    permissions: { type: Number, default: 0 }
+    permissions: { type: Number, default: 0 },
+    prefix: String
 });
 
 module.exports = mongoose.model('User', schema);
