@@ -5,6 +5,12 @@ mongoose.connect('mongodb://dbgt:CSZtni4ESQkVkI9hlSow0TQgQ7HoEJyNnV3Pn6Er2HXEnCu
 const db = mongoose.connection;
 autoIncrement.initialize(db);
 
+// other random imports
+const jwt = require('jsonwebtoken');
+const fs = require('fs');
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
+
 // MongoDB schemas
 const userSchema = require('./schemas/userSchema');
 const orderSchema = require('./schemas/orderSchema');
@@ -98,6 +104,44 @@ app.post('/api/blog/submit', async(req, res) => {
        await blogSchema.updateOne({ id: body.id }, { text: body.text, status: 3 });
        res.send("200 OK");
    } catch (e) { console.log(e); res.status(500).send("500 Internal Server Error"); }
+});
+
+// Checks users creds then if it is valid signs a jwt and returns it
+app.get('/api/user/login', async(req, res) => {
+   try {
+       const query = req.query;
+       const data = await userSchema.findOne({ username: query.username });
+       bcrypt.compare(query.password, data, (err, result) => {
+           if (err) { console.log(err); res.status(500).send("500 Internal Server Error"); return; }
+           if (result === true) {
+               const privateKey = fs.readFileSync('jwtRS256.key');
+               const token = jwt.sign({ username: query.username }, privateKey, { algorithm: 'RS256' });
+               res.send(token);
+           } else {
+               res.status(403).send("403 Forbidden");
+           }
+       });
+   } catch (e) { console.log(e); res.status(500).send("500 Internal Server Error"); }
+});
+
+// Invalidates the jwt
+app.get('/api/user/logout', (req, res) => {
+   try {
+
+   } catch (e) { console.log(e); res.status(500).send("500 Internal Server Error"); }
+});
+
+// Gets all user info
+app.get('/api/user/info', async(req, res) => {
+    try {
+        const query = req.query
+        const data = await userSchema.findOne({ username: query.username });
+        if (data === null) {
+            res.status(404).send("404 Not Found");
+        }
+        const returnData = { username: data.username, email: data.email, rank: data.rank, permissions: data.permissions, prefix: data.prefix };
+        res.send(returnData);
+    } catch (e) { console.log(e); res.status(500).send("500 Internal Server Error"); }
 });
 
 // Make sure we are connected to the db and if so run the API
