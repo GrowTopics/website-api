@@ -15,6 +15,7 @@ const saltRounds = 10;
 const userSchema = require('./schemas/userSchema');
 const orderSchema = require('./schemas/orderSchema');
 const blogSchema = require('./schemas/blogSchema');
+const jwtSchema = require('./schemas/jwtSchema');
 
 // Express and everything related to express
 const cookieparser = require('cookie-parser');
@@ -111,11 +112,21 @@ app.get('/api/user/login', async(req, res) => {
    try {
        const query = req.query;
        const data = await userSchema.findOne({ username: query.username });
-       bcrypt.compare(query.password, data, (err, result) => {
+       bcrypt.compare(query.password, data, async(err, result) => {
            if (err) { console.log(err); res.status(500).send("500 Internal Server Error"); return; }
            if (result === true) {
                const privateKey = fs.readFileSync('jwtRS256.key');
                const token = jwt.sign({ username: query.username }, privateKey, { algorithm: 'RS256' });
+
+               const jwtTokens = await jwtSchema.findOne({ username: query.username });
+               if (jwtTokens === null) {
+                   const jwtData = new jwtSchema({ username: query.username, jwttokens: [token] });
+                   jwtData.save();
+               } else {
+                   const tokens = token.jwttokens;
+                   tokens[tokens.length] = token;
+               }
+
                res.send(token);
            } else {
                res.status(403).send("403 Forbidden");
