@@ -136,8 +136,13 @@ app.get('/api/user/login', async(req, res) => {
 });
 
 // Invalidates the jwt
-app.get('/api/user/logout', (req, res) => {
+app.get('/api/user/logout', async(req, res) => {
    try {
+       const query = req.query;
+       const decodedToken = jwt.decode(query.token);
+       const data = await jwtSchema.findOne({ username: decodedToken.username });
+       const storageData = (data.jwttokens).filter((item) => { return item !== query.token });
+       await jwtSchema.updateOne({ username: decodedToken.username }, { jwttokens: storageData });
 
    } catch (e) { console.log(e); res.status(500).send("500 Internal Server Error"); }
 });
